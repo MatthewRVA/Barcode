@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Batch Barcode Printer</title>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+    }
+    .label {
+      display: inline-block;
+      width: 200px;
+      border: 1px solid #ddd;
+      margin: 5px;
+      padding: 10px;
+      text-align: center;
+    }
+    .logo {
+      width: 100px;
+      margin-bottom: 5px;
+    }
+    @media print {
+      button { display: none; }
+      body { margin: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <button onclick="window.print()">🖨️ Print</button>
+  <div id="container"></div>
+
+  <script>
+    const logoUrl = "https://yourdomain.com/logo.png"; // Replace with your actual logo
+
+    // Read POST data (via hidden form autofill)
+    window.onload = () => {
+      // This works when Deluge posts JSON via hidden form
+      let rawData = sessionStorage.getItem("barcodeData");
+
+      if (!rawData) {
+        document.body.innerHTML = "<p>No barcode data found. Please post from Zoho.</p>";
+        return;
+      }
+
+      let data = JSON.parse(rawData);
+      let container = document.getElementById("container");
+
+      data.items.forEach((item, i) => {
+        const label = document.createElement("div");
+        label.className = "label";
+
+        const logo = document.createElement("img");
+        logo.src = logoUrl;
+        logo.className = "logo";
+        label.appendChild(logo);
+
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.id = "barcode-" + i;
+        label.appendChild(svg);
+
+        const caption = document.createElement("div");
+        caption.innerText = item.name + "\n(" + item.sku + ")";
+        label.appendChild(caption);
+
+        container.appendChild(label);
+
+        JsBarcode(svg, item.sku, {
+          format: "CODE128",
+          height: 40,
+          displayValue: false
+        });
+      });
+    };
+  </script>
+
+  <script>
+    // Accept posted data via hidden form auto-submit (Deluge workaround)
+    // Create a hidden form and store data in sessionStorage
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("data")) {
+      try {
+        sessionStorage.setItem("barcodeData", decodeURIComponent(params.get("data")));
+        window.location.href = window.location.pathname;
+      } catch (e) {
+        console.error("Failed to parse posted data", e);
+      }
+    }
+  </script>
+</body>
+</html>
