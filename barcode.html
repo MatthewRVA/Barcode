@@ -15,10 +15,9 @@
       margin: 10px;
       padding: 10px;
       display: inline-block;
-      vertical-align: top;
       text-align: center;
+      vertical-align: top;
       box-sizing: border-box;
-      page-break-inside: avoid;
     }
 
     .label img.logo {
@@ -36,10 +35,6 @@
     }
 
     @media print {
-      body {
-        margin: 0;
-        padding: 0;
-      }
       .label {
         page-break-inside: avoid;
       }
@@ -53,38 +48,35 @@
 
 <script>
 function renderBarcodes() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const itemsParam = urlParams.get('items');
-  const items = itemsParam ? decodeURIComponent(itemsParam).split(',') : [];
+  const itemsData = sessionStorage.getItem("items");
+  if (!itemsData) return;
+
+  const items = JSON.parse(itemsData); // format: [{sku: "...", name: "..."}]
 
   const container = document.getElementById('labels-container');
-
   items.forEach(item => {
     const label = document.createElement('div');
     label.className = 'label';
 
-    // Logo
     const logo = document.createElement('img');
-    logo.src = 'https://yourdomain.com/logo.png'; // <-- Replace with your logo URL
+    logo.src = 'https://yourdomain.com/logo.png'; // <-- replace with your logo
     logo.className = 'logo';
     label.appendChild(logo);
 
-    // Barcode
     const svg = document.createElement('svg');
     svg.className = 'barcode';
-    JsBarcode(svg, item.trim(), { format: "CODE128", width: 2, height: 60, displayValue: false });
+    JsBarcode(svg, item.sku, { format: "CODE128", width: 2, height: 60, displayValue: false });
     label.appendChild(svg);
 
-    // Item name below barcode
     const name = document.createElement('div');
     name.className = 'item-name';
-    name.textContent = item.trim();
+    name.textContent = item.name;
     label.appendChild(name);
 
     container.appendChild(label);
   });
 
-  setTimeout(() => window.print(), 500); // Give the DOM time to render before printing
+  setTimeout(() => window.print(), 500);
 }
 </script>
 
