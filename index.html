@@ -1,27 +1,95 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Launching Barcode Print</title>
-  <script>
-    function decompressAndRedirect() {
-      try {
-        const params = new URLSearchParams(window.location.search);
-        const raw = params.get('data');
-        if (!raw) throw "Missing data";
-
-        const decoded = decodeURIComponent(raw);
-        const json = atob(decoded); // base64-decode
-        sessionStorage.setItem("items", json);
-        window.location.href = "barcode-print.html";
-      } catch (e) {
-        document.body.innerText = "Error loading barcode data: " + e;
-      }
+  <meta charset="UTF-8">
+  <title>Barcode Labels</title>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
     }
-    window.onload = decompressAndRedirect;
-  </script>
+    .label {
+      width: 250px;
+      padding: 10px;
+      border: 1px solid #000;
+      text-align: center;
+    }
+    .logo {
+      max-width: 100px;
+      margin-bottom: 5px;
+    }
+    svg.barcode {
+      margin-top: 5px;
+    }
+  </style>
 </head>
 <body>
-  <p>Loading barcodes...</p>
+
+<script>
+  function getQueryParam(param) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(param);
+  }
+
+  function renderBarcode(sku, name, quantity) {
+    for (let i = 0; i < quantity; i++) {
+      const label = document.createElement('div');
+      label.className = 'label';
+
+      const logo = document.createElement('img');
+      logo.src = 'https://www.rvacabinetry.com/images/RVA_Cabinetry.webp';
+      logo.className = 'logo';
+
+      const title = document.createElement('div');
+      title.textContent = name;
+
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.classList.add("barcode");
+
+      label.appendChild(logo);
+      label.appendChild(title);
+      label.appendChild(svg);
+      document.body.appendChild(label);
+
+      JsBarcode(svg, sku, {
+        format: "CODE128",
+        displayValue: true,
+        fontSize: 16,
+        height: 40
+      });
+    }
+  }
+
+  function init() {
+    const encodedData = getQueryParam("data");
+    if (!encodedData) {
+      document.body.innerHTML = "<h2>No data provided</h2>";
+      return;
+    }
+
+    try {
+      const decodedStr = decodeURIComponent(encodedData);
+      const items = JSON.parse(decodedStr);
+
+      items.forEach(item => {
+        const name = item.name || "Item";
+        const sku = item.sku || "000000";
+        const qty = parseInt(item.quantity || 1);
+        renderBarcode(sku, name, qty);
+      });
+    } catch (err) {
+      document.body.innerHTML = "<h2>Error decoding barcode data</h2>";
+      console.error(err);
+    }
+  }
+
+  window.onload = init;
+</script>
+
 </body>
 </html>
 
