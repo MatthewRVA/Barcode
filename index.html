@@ -8,26 +8,48 @@
     body {
       font-family: sans-serif;
       padding: 20px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
     }
+
+    .controls {
+      margin-bottom: 20px;
+    }
+
     .label {
-      width: 250px;
-      padding: 10px;
+      width: 300px;
+      padding: 20px;
       border: 1px solid #000;
       text-align: center;
+      margin-bottom: 40px;
+      page-break-after: always;
     }
+
     .logo {
       max-width: 100px;
-      margin-bottom: 5px;
+      margin-bottom: 10px;
     }
+
     svg.barcode {
-      margin-top: 5px;
+      margin-top: 10px;
+    }
+
+    @media print {
+      .controls {
+        display: none;
+      }
+
+      body {
+        padding: 0;
+      }
     }
   </style>
 </head>
 <body>
+
+<div class="controls">
+  <button onclick="window.print()">🖨️ Print Labels</button>
+</div>
+
+<div id="labels-container"></div>
 
 <script>
   function getQueryParam(param) {
@@ -36,6 +58,7 @@
   }
 
   function renderBarcode(sku, name, quantity) {
+    const container = document.getElementById("labels-container");
     for (let i = 0; i < quantity; i++) {
       const label = document.createElement('div');
       label.className = 'label';
@@ -53,13 +76,14 @@
       label.appendChild(logo);
       label.appendChild(title);
       label.appendChild(svg);
-      document.body.appendChild(label);
+      container.appendChild(label);
 
       JsBarcode(svg, sku, {
         format: "CODE128",
         displayValue: true,
         fontSize: 16,
-        height: 40
+        height: 40,
+        width: 2
       });
     }
   }
@@ -92,4 +116,3 @@
 
 </body>
 </html>
-
