@@ -1,83 +1,93 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Print Barcodes</title>
+  <meta charset="UTF-8">
+  <title>Barcode Labels</title>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: sans-serif;
+      padding: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
     }
-
     .label {
-      width: 300px;
-      height: 150px;
-      border: 1px solid #ccc;
-      margin: 10px;
+      width: 250px;
       padding: 10px;
-      display: inline-block;
+      border: 1px solid #000;
       text-align: center;
-      vertical-align: top;
-      box-sizing: border-box;
     }
-
-    .label img.logo {
-      max-width: 80px;
+    .logo {
+      max-width: 100px;
       margin-bottom: 5px;
     }
-
-    .barcode {
-      margin: 5px 0;
-    }
-
-    .item-name {
-      font-size: 14px;
-      margin-top: 4px;
-    }
-
-    @media print {
-      .label {
-        page-break-inside: avoid;
-      }
+    svg.barcode {
+      margin-top: 5px;
     }
   </style>
 </head>
-<body onload="renderBarcodes()">
-
-<h2>Printing Barcodes...</h2>
-<div id="labels-container"></div>
+<body>
 
 <script>
-function renderBarcodes() {
-  const itemsData = sessionStorage.getItem("items");
-  if (!itemsData) return;
+  function getQueryParam(param) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(param);
+  }
 
-  const items = JSON.parse(itemsData); // format: [{sku: "...", name: "..."}]
+  function renderBarcode(sku, name, quantity) {
+    for (let i = 0; i < quantity; i++) {
+      const label = document.createElement('div');
+      label.className = 'label';
 
-  const container = document.getElementById('labels-container');
-  items.forEach(item => {
-    const label = document.createElement('div');
-    label.className = 'label';
+      const logo = document.createElement('img');
+      logo.src = 'https://www.rvacabinetry.com/images/RVA_Cabinetry.webp';
+      logo.className = 'logo';
 
-    const logo = document.createElement('img');
-    logo.src = 'https://yourdomain.com/logo.png'; // <-- replace with your logo
-    logo.className = 'logo';
-    label.appendChild(logo);
+      const title = document.createElement('div');
+      title.textContent = name;
 
-    const svg = document.createElement('svg');
-    svg.className = 'barcode';
-    JsBarcode(svg, item.sku, { format: "CODE128", width: 2, height: 60, displayValue: false });
-    label.appendChild(svg);
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.classList.add("barcode");
 
-    const name = document.createElement('div');
-    name.className = 'item-name';
-    name.textContent = item.name;
-    label.appendChild(name);
+      label.appendChild(logo);
+      label.appendChild(title);
+      label.appendChild(svg);
+      document.body.appendChild(label);
 
-    container.appendChild(label);
-  });
+      JsBarcode(svg, sku, {
+        format: "CODE128",
+        displayValue: true,
+        fontSize: 16,
+        height: 40
+      });
+    }
+  }
 
-  setTimeout(() => window.print(), 500);
-}
+  function init() {
+    const encodedData = getQueryParam("data");
+    if (!encodedData) {
+      document.body.innerHTML = "<h2>No data provided</h2>";
+      return;
+    }
+
+    try {
+      const decodedStr = decodeURIComponent(encodedData);
+      const items = JSON.parse(decodedStr);
+
+      items.forEach(item => {
+        const name = item.name || "Item";
+        const sku = item.sku || "000000";
+        const qty = parseInt(item.quantity || 1);
+        renderBarcode(sku, name, qty);
+      });
+    } catch (err) {
+      document.body.innerHTML = "<h2>Error decoding barcode data</h2>";
+      console.error(err);
+    }
+  }
+
+  window.onload = init;
 </script>
 
 </body>
