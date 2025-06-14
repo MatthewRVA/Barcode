@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Launching Barcode Print</title>
+  <script>
+    function decompressAndRedirect() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const raw = params.get('data');
+        if (!raw) throw "Missing data";
+
+        const decoded = decodeURIComponent(raw);
+        const json = atob(decoded); // base64-decode
+        sessionStorage.setItem("items", json);
+        window.location.href = "barcode-print.html";
+      } catch (e) {
+        document.body.innerText = "Error loading barcode data: " + e;
+      }
+    }
+    window.onload = decompressAndRedirect;
+  </script>
+</head>
+<body>
+  <p>Loading barcodes...</p>
+</body>
+</html>
+
