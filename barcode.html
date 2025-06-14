@@ -1,93 +1,92 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Batch Barcode Printer</title>
+  <title>Print Barcodes</title>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <style>
     body {
-      font-family: sans-serif;
-      margin: 20px;
+      font-family: Arial, sans-serif;
     }
+
     .label {
-      display: inline-block;
-      width: 200px;
-      border: 1px solid #ddd;
-      margin: 5px;
+      width: 300px;
+      height: 150px;
+      border: 1px solid #ccc;
+      margin: 10px;
       padding: 10px;
+      display: inline-block;
+      vertical-align: top;
       text-align: center;
+      box-sizing: border-box;
+      page-break-inside: avoid;
     }
-    .logo {
-      width: 100px;
+
+    .label img.logo {
+      max-width: 80px;
       margin-bottom: 5px;
     }
+
+    .barcode {
+      margin: 5px 0;
+    }
+
+    .item-name {
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
     @media print {
-      button { display: none; }
-      body { margin: 0; }
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      .label {
+        page-break-inside: avoid;
+      }
     }
   </style>
 </head>
-<body>
+<body onload="renderBarcodes()">
 
-  <button onclick="window.print()">🖨️ Print</button>
-  <div id="container"></div>
+<h2>Printing Barcodes...</h2>
+<div id="labels-container"></div>
 
-  <script>
-    const logoUrl = "https://yourdomain.com/logo.png"; // Replace with your actual logo
+<script>
+function renderBarcodes() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const itemsParam = urlParams.get('items');
+  const items = itemsParam ? decodeURIComponent(itemsParam).split(',') : [];
 
-    // Read POST data (via hidden form autofill)
-    window.onload = () => {
-      // This works when Deluge posts JSON via hidden form
-      let rawData = sessionStorage.getItem("barcodeData");
+  const container = document.getElementById('labels-container');
 
-      if (!rawData) {
-        document.body.innerHTML = "<p>No barcode data found. Please post from Zoho.</p>";
-        return;
-      }
+  items.forEach(item => {
+    const label = document.createElement('div');
+    label.className = 'label';
 
-      let data = JSON.parse(rawData);
-      let container = document.getElementById("container");
+    // Logo
+    const logo = document.createElement('img');
+    logo.src = 'https://yourdomain.com/logo.png'; // <-- Replace with your logo URL
+    logo.className = 'logo';
+    label.appendChild(logo);
 
-      data.items.forEach((item, i) => {
-        const label = document.createElement("div");
-        label.className = "label";
+    // Barcode
+    const svg = document.createElement('svg');
+    svg.className = 'barcode';
+    JsBarcode(svg, item.trim(), { format: "CODE128", width: 2, height: 60, displayValue: false });
+    label.appendChild(svg);
 
-        const logo = document.createElement("img");
-        logo.src = logoUrl;
-        logo.className = "logo";
-        label.appendChild(logo);
+    // Item name below barcode
+    const name = document.createElement('div');
+    name.className = 'item-name';
+    name.textContent = item.trim();
+    label.appendChild(name);
 
-        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        svg.id = "barcode-" + i;
-        label.appendChild(svg);
+    container.appendChild(label);
+  });
 
-        const caption = document.createElement("div");
-        caption.innerText = item.name + "\n(" + item.sku + ")";
-        label.appendChild(caption);
+  setTimeout(() => window.print(), 500); // Give the DOM time to render before printing
+}
+</script>
 
-        container.appendChild(label);
-
-        JsBarcode(svg, item.sku, {
-          format: "CODE128",
-          height: 40,
-          displayValue: false
-        });
-      });
-    };
-  </script>
-
-  <script>
-    // Accept posted data via hidden form auto-submit (Deluge workaround)
-    // Create a hidden form and store data in sessionStorage
-    const params = new URLSearchParams(window.location.search);
-    if (params.has("data")) {
-      try {
-        sessionStorage.setItem("barcodeData", decodeURIComponent(params.get("data")));
-        window.location.href = window.location.pathname;
-      } catch (e) {
-        console.error("Failed to parse posted data", e);
-      }
-    }
-  </script>
 </body>
 </html>
