@@ -2,79 +2,122 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Barcodes</title>
-  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  <title>Barcode Labels</title>
+  <script src="https://cdn.jsdelivr.net/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
   <style>
+    @page {
+      size: 3in 4in;
+      margin: 0.2in;
+    }
     body {
       font-family: Arial, sans-serif;
-      padding: 20px;
+      margin: 0;
+      padding: 0;
     }
-    #barcodes > div {
-      margin-bottom: 30px;
+    .label {
+      width: 3in;
+      height: 4in;
+      box-sizing: border-box;
+      page-break-after: always;
+      border: 1px solid #ccc;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-around;
+    }
+    .logo {
+      max-width: 2in;
+      max-height: 1in;
+      object-fit: contain;
+      margin-bottom: 10px;
+    }
+    .customer, .salesorder, .item-name {
+      font-weight: bold;
+      text-align: center;
+      margin: 5px 0;
+    }
+    svg {
+      width: 2.5in;
+      height: 1in;
     }
   </style>
 </head>
 <body>
-  <h1>Barcodes</h1>
-  <div id="barcodes">Loading barcodes...</div>
-  <button onclick="window.print()">Print</button>
+  <div id="labels"></div>
 
   <script>
+    // Your logo URL
+    const logoUrl = "https://rvacabinetry.com/images/RVA_Cabinetry.webp";
+
+    // These could be dynamic from URL or API, for now hardcoded
+    const customerName = "Acme Corp";
+    const salesOrderNumber = "SO-5072431000005794116";
+
     async function fetchBarcodes() {
-      const container = document.getElementById('barcodes');
       const params = new URLSearchParams(window.location.search);
-      const id = params.get('id');
+      const id = params.get("id");
 
       if (!id) {
-        container.textContent = "Error: No sales order ID provided in URL.";
+        alert("Missing sales order id");
         return;
       }
 
       try {
-        const response = await fetch(`/api/salesorder?id=${encodeURIComponent(id)}`);
-
-        if (!response.ok) {
-          throw new Error(`API returned status ${response.status}`);
-        }
-
+        const response = await fetch(`/api/salesorder?id=${id}`);
         const items = await response.json();
 
-        if (!Array.isArray(items) || items.length === 0) {
-          container.textContent = "No items found for this sales order.";
-          return;
-        }
-
-        container.innerHTML = '';
+        const container = document.getElementById("labels");
+        container.innerHTML = "";
 
         items.forEach(item => {
-          const itemDiv = document.createElement('div');
+          const quantity = item.quantity || 1;
 
-          const nameDiv = document.createElement('div');
-          nameDiv.textContent = `${item.name} (${item.sku})`;
+          for(let i = 0; i < quantity; i++) {
+            const label = document.createElement("div");
+            label.className = "label";
 
-          const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            // Logo
+            const logoImg = document.createElement("img");
+            logoImg.src = logoUrl;
+            logoImg.alt = "Logo";
+            logoImg.className = "logo";
 
-          JsBarcode(svg, item.sku, {
-            format: 'CODE128',
-            displayValue: true,
-            width: 2,
-            height: 40,
-            margin: 10,
-          });
+            // Customer Name
+            const customerDiv = document.createElement("div");
+            customerDiv.className = "customer";
+            customerDiv.textContent = customerName;
 
-          itemDiv.appendChild(nameDiv);
-          itemDiv.appendChild(svg);
+            // Sales Order Number
+            const soDiv = document.createElement("div");
+            soDiv.className = "salesorder";
+            soDiv.textContent = salesOrderNumber;
 
-          container.appendChild(itemDiv);
+            // Item Name
+            const itemNameDiv = document.createElement("div");
+            itemNameDiv.className = "item-name";
+            itemNameDiv.textContent = `${item.name} (${item.sku})`;
+
+            // Barcode SVG
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+
+            label.appendChild(logoImg);
+            label.appendChild(customerDiv);
+            label.appendChild(soDiv);
+            label.appendChild(itemNameDiv);
+            label.appendChild(svg);
+
+            container.appendChild(label);
+
+            JsBarcode(svg, item.sku, { format: "CODE128", displayValue: true });
+          }
         });
-
-      } catch (err) {
-        container.textContent = "Error loading barcodes: " + err.message;
-        console.error(err);
+      } catch (error) {
+        alert("Error loading barcodes: " + error.message);
       }
     }
 
-    window.addEventListener('load', fetchBarcodes);
+    window.onload = fetchBarcodes;
   </script>
 </body>
 </html>
