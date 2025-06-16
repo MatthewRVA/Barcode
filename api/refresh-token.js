@@ -1,3 +1,4 @@
+// pages/api/refresh.js
 import fetch from 'node-fetch';
 
 export default async function handler(req, res) {
@@ -18,22 +19,29 @@ export default async function handler(req, res) {
 
     const response = await fetch('https://accounts.zoho.com/oauth/v2/token', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString(),
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: params
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      return res.status(500).json({ error: "Failed to refresh token", details: errorData });
+      const errorText = await response.text();
+      console.error("Zoho Token Refresh Error:", errorText);
+      return res.status(500).json({ error: "Failed to refresh token", details: errorText });
     }
 
     const data = await response.json();
+    console.log("Access token received:", data.access_token);
 
-    // You should store data.access_token securely (database, env, cache)
-    // For demo, just return it here
-    return res.status(200).json({ access_token: data.access_token, expires_in: data.expires_in });
+    // You might want to store access_token somewhere secure for reuse
+    return res.status(200).json({
+      access_token: data.access_token,
+      expires_in: data.expires_in
+    });
 
   } catch (err) {
+    console.error("Unhandled error:", err);
     return res.status(500).json({ error: err.message });
   }
 }
