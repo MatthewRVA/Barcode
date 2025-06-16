@@ -4,14 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Barcodes</title>
-  <script src="https://cdn.jsdelivr.net/jsbarcode/3.11.5/JsBarcode.all.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
 </head>
 <body>
   <h1>Barcodes</h1>
   <div id="barcodes">Loading barcodes...</div>
   <button onclick="window.print()">Print</button>
 
-  <script defer>
+  <script>
     async function fetchBarcodes() {
       const params = new URLSearchParams(window.location.search);
       const id = params.get("id");
