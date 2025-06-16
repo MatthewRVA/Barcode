@@ -3,6 +3,16 @@
 <head>
   <title>Barcodes</title>
   <script src="https://cdn.jsdelivr.net/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
+  <style>
+    @media print {
+      button {
+        display: none;
+      }
+      body {
+        margin: 0.5in;
+      }
+    }
+  </style>
 </head>
 <body>
   <h1>Barcodes</h1>
@@ -13,26 +23,43 @@
     async function fetchBarcodes() {
       const params = new URLSearchParams(window.location.search);
       const id = params.get("id");
-
-      const response = await fetch(`/api/salesorder?id=${id}`);
-      const items = await response.json();
-
       const container = document.getElementById("barcodes");
+      container.innerHTML = "";
 
-      items.forEach(item => {
-        const div = document.createElement("div");
-        div.style.marginBottom = "30px";
+      if (!id) {
+        container.innerText = "Missing sales order ID in URL.";
+        return;
+      }
 
-        const name = document.createElement("div");
-        name.innerText = `${item.name} (${item.sku})`;
+      try {
+        const response = await fetch(`/api/salesorder?id=${id}`);
+        if (!response.ok) {
+          throw new Error(`Error fetching sales order: ${response.statusText}`);
+        }
+        const items = await response.json();
 
-        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        JsBarcode(svg, item.sku, { format: "CODE128", displayValue: true });
+        if (!items.length) {
+          container.innerText = "No items found in sales order.";
+          return;
+        }
 
-        div.appendChild(name);
-        div.appendChild(svg);
-        container.appendChild(div);
-      });
+        items.forEach(item => {
+          const div = document.createElement("div");
+          div.style.marginBottom = "30px";
+
+          const name = document.createElement("div");
+          name.innerText = `${item.name} (${item.sku})`;
+
+          const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+          JsBarcode(svg, item.sku, { format: "CODE128", displayValue: true });
+
+          div.appendChild(name);
+          div.appendChild(svg);
+          container.appendChild(div);
+        });
+      } catch (err) {
+        container.innerText = "Failed to load barcodes: " + err.message;
+      }
     }
 
     window.onload = fetchBarcodes;
