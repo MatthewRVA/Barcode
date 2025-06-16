@@ -1,118 +1,41 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Barcode Labels</title>
-  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-  <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
-    }
-
-    .controls {
-      margin-bottom: 20px;
-    }
-
-    .label {
-      width: 300px;
-      padding: 20px;
-      border: 1px solid #000;
-      text-align: center;
-      margin-bottom: 40px;
-      page-break-after: always;
-    }
-
-    .logo {
-      max-width: 100px;
-      margin-bottom: 10px;
-    }
-
-    svg.barcode {
-      margin-top: 10px;
-    }
-
-    @media print {
-      .controls {
-        display: none;
-      }
-
-      body {
-        padding: 0;
-      }
-    }
-  </style>
+  <title>Barcodes</title>
+  <script src="https://cdn.jsdelivr.net/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
 </head>
 <body>
+  <h1>Barcodes</h1>
+  <div id="barcodes"></div>
+  <button onclick="window.print()">Print</button>
 
-<div class="controls">
-  <button onclick="window.print()">🖨️ Print Labels</button>
-</div>
+  <script>
+    async function fetchBarcodes() {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get("id");
 
-<div id="labels-container"></div>
+      const response = await fetch(`/api/salesorder?id=${id}`);
+      const items = await response.json();
 
-<script>
-  function getQueryParam(param) {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get(param);
-  }
-
-  function renderBarcode(sku, name, quantity) {
-    const container = document.getElementById("labels-container");
-    for (let i = 0; i < quantity; i++) {
-      const label = document.createElement('div');
-      label.className = 'label';
-
-      const logo = document.createElement('img');
-      logo.src = 'https://www.rvacabinetry.com/images/RVA_Cabinetry.webp';
-      logo.className = 'logo';
-
-      const title = document.createElement('div');
-      title.textContent = name;
-
-      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      svg.classList.add("barcode");
-
-      label.appendChild(logo);
-      label.appendChild(title);
-      label.appendChild(svg);
-      container.appendChild(label);
-
-      JsBarcode(svg, sku, {
-        format: "CODE128",
-        displayValue: true,
-        fontSize: 16,
-        height: 40,
-        width: 2
-      });
-    }
-  }
-
-  function init() {
-    const encodedData = getQueryParam("data");
-    if (!encodedData) {
-      document.body.innerHTML = "<h2>No data provided</h2>";
-      return;
-    }
-
-    try {
-      const decodedStr = decodeURIComponent(encodedData);
-      const items = JSON.parse(decodedStr);
+      const container = document.getElementById("barcodes");
 
       items.forEach(item => {
-        const name = item.name || "Item";
-        const sku = item.sku || "000000";
-        const qty = parseInt(item.quantity || 1);
-        renderBarcode(sku, name, qty);
+        const div = document.createElement("div");
+        div.style.marginBottom = "30px";
+
+        const name = document.createElement("div");
+        name.innerText = `${item.name} (${item.sku})`;
+
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        JsBarcode(svg, item.sku, { format: "CODE128", displayValue: true });
+
+        div.appendChild(name);
+        div.appendChild(svg);
+        container.appendChild(div);
       });
-    } catch (err) {
-      document.body.innerHTML = "<h2>Error decoding barcode data</h2>";
-      console.error(err);
     }
-  }
 
-  window.onload = init;
-</script>
-
+    window.onload = fetchBarcodes;
+  </script>
 </body>
 </html>
