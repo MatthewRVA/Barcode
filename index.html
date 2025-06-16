@@ -1,119 +1,92 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Barcode Labels</title>
-  <script src="https://cdn.jsdelivr.net/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
+  <title>Barcodes</title>
   <style>
-    @page {
-      size: 3in 4in;
-      margin: 0.2in;
-    }
     body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
+      font-family: sans-serif;
     }
-    .label {
+
+    .page {
       width: 3in;
       height: 4in;
-      box-sizing: border-box;
       page-break-after: always;
       border: 1px solid #ccc;
       padding: 10px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-around;
+      box-sizing: border-box;
+      text-align: center;
     }
-    .logo {
-      max-width: 2in;
-      max-height: 1in;
-      object-fit: contain;
+
+    img.logo {
+      max-width: 100px;
       margin-bottom: 10px;
     }
-    .customer, .salesorder, .item-name {
-      font-weight: bold;
-      text-align: center;
-      margin: 5px 0;
-    }
+
     svg {
-      width: 2.5in;
-      height: 1in;
+      margin-top: 10px;
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 </head>
 <body>
-  <div id="labels"></div>
+  <div id="barcodes"></div>
 
   <script>
-    // Your logo URL
-    const logoUrl = "https://rvacabinetry.com/images/RVA_Cabinetry.webp";
-
-    // These could be dynamic from URL or API, for now hardcoded
-    const customerName = "Acme Corp";
-    const salesOrderNumber = "SO-5072431000005794116";
-
     async function fetchBarcodes() {
-      const params = new URLSearchParams(window.location.search);
-      const id = params.get("id");
-
-      if (!id) {
-        alert("Missing sales order id");
-        return;
-      }
-
       try {
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get("id");
+        const customer = params.get("customer") || "Customer Name";
+        const order = params.get("order") || id;
+
         const response = await fetch(`/api/salesorder?id=${id}`);
         const items = await response.json();
 
-        const container = document.getElementById("labels");
-        container.innerHTML = "";
+        const container = document.getElementById("barcodes");
+
+        if (!Array.isArray(items)) {
+          throw new Error("Invalid items format");
+        }
 
         items.forEach(item => {
-          const quantity = item.quantity || 1;
+          const quantity = parseInt(item.quantity || 1);
 
-          for(let i = 0; i < quantity; i++) {
-            const label = document.createElement("div");
-            label.className = "label";
+          for (let i = 0; i < quantity; i++) {
+            const div = document.createElement("div");
+            div.className = "page";
 
-            // Logo
-            const logoImg = document.createElement("img");
-            logoImg.src = logoUrl;
-            logoImg.alt = "Logo";
-            logoImg.className = "logo";
+            const logo = document.createElement("img");
+            logo.src = "https://rvacabinetry.com/images/RVA_Cabinetry.webp";
+            logo.className = "logo";
 
-            // Customer Name
-            const customerDiv = document.createElement("div");
-            customerDiv.className = "customer";
-            customerDiv.textContent = customerName;
+            const customerName = document.createElement("div");
+            customerName.innerText = customer;
 
-            // Sales Order Number
-            const soDiv = document.createElement("div");
-            soDiv.className = "salesorder";
-            soDiv.textContent = salesOrderNumber;
+            const orderNumber = document.createElement("div");
+            orderNumber.innerText = `Sales Order: ${order}`;
 
-            // Item Name
-            const itemNameDiv = document.createElement("div");
-            itemNameDiv.className = "item-name";
-            itemNameDiv.textContent = `${item.name} (${item.sku})`;
+            const name = document.createElement("div");
+            name.innerText = `${item.name} (${item.sku})`;
 
-            // Barcode SVG
             const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
 
-            label.appendChild(logoImg);
-            label.appendChild(customerDiv);
-            label.appendChild(soDiv);
-            label.appendChild(itemNameDiv);
-            label.appendChild(svg);
+            div.appendChild(logo);
+            div.appendChild(customerName);
+            div.appendChild(orderNumber);
+            div.appendChild(name);
+            div.appendChild(svg);
+            container.appendChild(div);
 
-            container.appendChild(label);
-
-            JsBarcode(svg, item.sku, { format: "CODE128", displayValue: true });
+            JsBarcode(svg, item.sku, {
+              format: "CODE128",
+              displayValue: true,
+              fontSize: 14
+            });
           }
         });
-      } catch (error) {
-        alert("Error loading barcodes: " + error.message);
+      } catch (err) {
+        console.error("Error loading barcodes:", err);
+        document.getElementById("barcodes").innerText = "Failed to load barcodes.";
       }
     }
 
