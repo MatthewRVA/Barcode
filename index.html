@@ -1,30 +1,33 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Barcodes</title>
+  <script src="https://cdn.jsdelivr.net/jsbarcode/3.11.5/JsBarcode.all.min.js" defer></script>
 </head>
 <body>
   <h1>Barcodes</h1>
-  <div id="barcodes"></div>
+  <div id="barcodes">Loading barcodes...</div>
   <button onclick="window.print()">Print</button>
 
-  <script src="https://cdn.jsdelivr.net/jsbarcode/3.11.5/JsBarcode.all.min.js" onload="fetchBarcodes()"></script>
-  <script>
+  <script defer>
     async function fetchBarcodes() {
       const params = new URLSearchParams(window.location.search);
       const id = params.get("id");
+      const container = document.getElementById("barcodes");
 
       if (!id) {
-        console.error("Missing ID in URL");
+        container.innerText = "Missing sales order ID in URL";
         return;
       }
 
       try {
         const response = await fetch(`/api/salesorder?id=${id}`);
+        if (!response.ok) throw new Error("Failed to fetch barcodes");
         const items = await response.json();
 
-        const container = document.getElementById("barcodes");
-
+        container.innerHTML = "";
         items.forEach(item => {
           const div = document.createElement("div");
           div.style.marginBottom = "30px";
@@ -40,10 +43,12 @@
           container.appendChild(div);
         });
       } catch (err) {
-        console.error("Failed to load barcodes:", err);
+        container.innerText = "Error loading barcodes: " + err.message;
+        console.error(err);
       }
     }
+
+    window.onload = fetchBarcodes;
   </script>
 </body>
 </html>
-
