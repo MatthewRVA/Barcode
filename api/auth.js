@@ -1,5 +1,3 @@
-import fetch from "node-fetch";
-
 export default async function handler(req, res) {
   try {
     const code = req.query.code;
@@ -27,8 +25,6 @@ export default async function handler(req, res) {
     if (!response.ok) {
       return res.status(response.status).json({ error: data });
     }
-
-    // You can store data.refresh_token securely here if you want
 
     return res.status(200).json({
       access_token: data.access_token,
