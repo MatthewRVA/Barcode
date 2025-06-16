@@ -3,9 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <title>Barcodes</title>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <style>
-    body { font-family: sans-serif; padding: 1em; }
-    #barcodes > div { margin-bottom: 30px; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    #barcodes > div {
+      margin-bottom: 30px;
+    }
   </style>
 </head>
 <body>
@@ -14,63 +20,61 @@
   <button onclick="window.print()">Print</button>
 
   <script>
-    async function loadJsBarcode() {
-      if (!window.JsBarcode) {
-        await new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = "https://cdn.jsdelivr.net/jsbarcode/3.11.5/JsBarcode.all.min.js";
-          script.onload = resolve;
-          script.onerror = () => reject(new Error("Failed to load JsBarcode library"));
-          document.head.appendChild(script);
-        });
-      }
-    }
-
     async function fetchBarcodes() {
-      const container = document.getElementById("barcodes");
+      const container = document.getElementById('barcodes');
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+
+      if (!id) {
+        container.textContent = "Error: No sales order ID provided in URL.";
+        return;
+      }
+
       try {
-        await loadJsBarcode();
+        const response = await fetch(`/api/salesorder?id=${encodeURIComponent(id)}`);
 
-        const params = new URLSearchParams(window.location.search);
-        const id = params.get("id");
-
-        if (!id) {
-          container.innerText = "Missing sales order ID in URL (e.g. ?id=5072431000005794116)";
-          return;
+        if (!response.ok) {
+          throw new Error(`API returned status ${response.status}`);
         }
-
-        const response = await fetch(`/api/salesorder?id=${id}`);
-        if (!response.ok) throw new Error(`API error: ${response.status}`);
 
         const items = await response.json();
-        container.innerHTML = "";
 
-        if (!items.length) {
-          container.innerText = "No barcodes found for this sales order.";
+        if (!Array.isArray(items) || items.length === 0) {
+          container.textContent = "No items found for this sales order.";
           return;
         }
 
-        items.forEach(item => {
-          const div = document.createElement("div");
+        container.innerHTML = '';
 
-          const name = document.createElement("div");
-          name.innerText = `${item.name} (${item.sku})`;
+        items.forEach(item => {
+          const itemDiv = document.createElement('div');
+
+          const nameDiv = document.createElement('div');
+          nameDiv.textContent = `${item.name} (${item.sku})`;
 
           const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-          JsBarcode(svg, item.sku, { format: "CODE128", displayValue: true });
 
-          div.appendChild(name);
-          div.appendChild(svg);
-          container.appendChild(div);
+          JsBarcode(svg, item.sku, {
+            format: 'CODE128',
+            displayValue: true,
+            width: 2,
+            height: 40,
+            margin: 10,
+          });
+
+          itemDiv.appendChild(nameDiv);
+          itemDiv.appendChild(svg);
+
+          container.appendChild(itemDiv);
         });
 
-      } catch (error) {
-        container.innerText = "Error loading barcodes: " + error.message;
-        console.error(error);
+      } catch (err) {
+        container.textContent = "Error loading barcodes: " + err.message;
+        console.error(err);
       }
     }
 
-    window.onload = fetchBarcodes;
+    window.addEventListener('load', fetchBarcodes);
   </script>
 </body>
 </html>
