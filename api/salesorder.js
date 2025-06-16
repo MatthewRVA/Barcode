@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Missing environment variables" });
   }
 
-  const url = `https://inventory.zohoapis.com/api/v1/salesorders/${id}?organization_id=${orgId}`;
+  const url = `https://www.zohoapis.com/inventory/v1/salesorders/${id}?organization_id=${orgId}`;
 
   try {
     const zohoRes = await fetch(url, {
