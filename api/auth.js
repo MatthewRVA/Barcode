@@ -1,7 +1,6 @@
 export default async function handler(req, res) {
   try {
     const code = req.query.code;
-
     if (!code) {
       return res.status(400).json({ error: "Missing authorization code" });
     }
@@ -23,16 +22,17 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (!response.ok) {
+      console.error("Zoho token error:", data);
       return res.status(response.status).json({ error: data });
     }
 
-    return res.status(200).json({
-      access_token: data.access_token,
-      refresh_token: data.refresh_token,
-      expires_in: data.expires_in,
-      api_domain: data.api_domain,
-    });
+    // Log success data for debugging (remove in production)
+    console.log("Zoho token success:", data);
+
+    return res.status(200).json(data);
   } catch (error) {
+    console.error("API auth error:", error);
     return res.status(500).json({ error: error.message });
   }
 }
+
