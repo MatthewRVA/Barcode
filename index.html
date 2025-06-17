@@ -3,122 +3,118 @@
 <head>
   <meta charset="UTF-8" />
   <title>Barcodes</title>
-  <script src="https://cdn.jsdelivr.net/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
+
+  <!-- JsBarcode Library (must be loaded before using it) -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
   <style>
     body {
       font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
     }
 
-    #printBtn {
-      display: block;
-      margin: 1em auto;
-      padding: 0.6em 1.5em;
-      font-size: 1.2em;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
+    .print-button {
+      margin-bottom: 20px;
     }
 
     @media print {
-      #printBtn {
+      .print-button {
         display: none;
-      }
-      .barcode-page {
-        page-break-after: always;
       }
     }
 
-    .barcode-page {
+    .page {
+      page-break-after: always;
       width: 3in;
       height: 4in;
-      border: 1px solid #ccc;
-      margin: 1em auto;
-      padding: 1em;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-between;
+      padding: 0.5in;
+      box-sizing: border-box;
+      text-align: center;
     }
 
     .logo {
-      max-height: 1in;
-      margin-bottom: 0.5em;
-    }
-
-    .info {
-      text-align: center;
-      font-size: 14px;
+      width: 100px;
+      margin-bottom: 10px;
     }
 
     .sku {
-      font-size: 1.6em;
-      font-weight: bold;
-      margin: 0.5em 0;
+      font-size: 20px;
+      margin-top: 10px;
     }
 
-    svg {
-      width: 100%;
-      height: auto;
+    .info {
+      font-size: 14px;
+      margin-top: 5px;
     }
   </style>
 </head>
 <body>
-  <button id="printBtn" onclick="window.print()">🖨️ Print</button>
+  <button class="print-button" onclick="window.print()">🖨️ Print</button>
   <div id="barcodes"></div>
 
   <script>
     async function fetchBarcodes() {
-      try {
-        const params = new URLSearchParams(window.location.search);
-        const id = params.get("id");
-        const customer = params.get("customer") || "";
-        const order = params.get("order") || "";
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get("id");
+      const customer = params.get("customer") || "";
+      const order = params.get("order") || "";
 
+      if (!id) {
+        alert("Missing sales order ID.");
+        return;
+      }
+
+      try {
         const response = await fetch(`/api/salesorder?id=${id}`);
         const items = await response.json();
 
-        if (!Array.isArray(items)) {
-          throw new Error("Invalid API response: expected an array");
-        }
+        if (!Array.isArray(items)) throw new Error("Invalid items returned");
 
         const container = document.getElementById("barcodes");
         container.innerHTML = "";
 
         items.forEach(item => {
-          const quantity = item.quantity || 1;
-
+          const quantity = parseInt(item.quantity || 1);
           for (let i = 0; i < quantity; i++) {
             const page = document.createElement("div");
-            page.className = "barcode-page";
+            page.className = "page";
 
             const logo = document.createElement("img");
             logo.src = "https://rvacabinetry.com/images/RVA_Cabinetry.webp";
-            logo.alt = "Logo";
             logo.className = "logo";
 
-            const info = document.createElement("div");
-            info.className = "info";
-            info.innerHTML = `
-              <div>${customer}</div>
-              <div>Order: ${order}</div>
-              <div class="sku">${item.sku}</div>
-              <div>${item.name}</div>
-            `;
+            const nameDiv = document.createElement("div");
+            nameDiv.textContent = item.name;
+
+            const customerDiv = document.createElement("div");
+            customerDiv.className = "info";
+            customerDiv.textContent = customer;
+
+            const orderDiv = document.createElement("div");
+            orderDiv.className = "info";
+            orderDiv.textContent = order;
 
             const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
             JsBarcode(svg, item.sku, {
               format: "CODE128",
-              displayValue: false,
-              fontSize: 18,
+              displayValue: true,
+              fontSize: 24,
               height: 60,
-              margin: 10
+              width: 2,
+              margin: 0
             });
 
+            const skuDiv = document.createElement("div");
+            skuDiv.className = "sku";
+            skuDiv.textContent = item.sku;
+
             page.appendChild(logo);
-            page.appendChild(info);
+            page.appendChild(nameDiv);
+            page.appendChild(customerDiv);
+            page.appendChild(orderDiv);
             page.appendChild(svg);
+            page.appendChild(skuDiv);
             container.appendChild(page);
           }
         });
