@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
   <title>Barcodes</title>
   <script src="https://cdn.jsdelivr.net/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
   <style>
@@ -20,6 +21,9 @@
         align-items: center;
         justify-content: space-around;
       }
+    }
+    body {
+      font-family: Arial, sans-serif;
     }
     .page {
       width: 3in;
@@ -46,14 +50,26 @@
     }
     .text {
       text-align: center;
-      font-family: Arial, sans-serif;
       font-size: 14px;
       margin: 5px 0;
       word-break: break-word;
     }
+    #loading {
+      text-align: center;
+      margin-top: 2em;
+      font-weight: bold;
+    }
+    #error {
+      color: red;
+      text-align: center;
+      margin-top: 2em;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
+  <div id="loading">Loading barcodes...</div>
+  <div id="error" style="display:none;"></div>
   <div id="barcodes"></div>
 
   <script>
@@ -63,21 +79,41 @@
       const customer = params.get("customer") || "Unknown Customer";
       const order = params.get("order") || "Unknown Order";
 
+      if (!id) {
+        document.getElementById('loading').style.display = 'none';
+        const errorDiv = document.getElementById('error');
+        errorDiv.style.display = 'block';
+        errorDiv.textContent = "Missing sales order ID in URL";
+        return;
+      }
+
       try {
-        const response = await fetch(`/api/salesorder?id=${id}`);
-        if (!response.ok) throw new Error("Failed to fetch sales order");
+        const response = await fetch(`/api/salesorder?id=${encodeURIComponent(id)}`);
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status} ${response.statusText}`);
+        }
 
         const items = await response.json();
 
+        if (!Array.isArray(items)) {
+          throw new Error("API did not return an array of items");
+        }
+
+        if (items.length === 0) {
+          throw new Error("No items found for this sales order");
+        }
+
+        document.getElementById('loading').style.display = 'none';
         const container = document.getElementById("barcodes");
-        container.innerHTML = "";  // Clear previous
+        container.innerHTML = "";
 
         items.forEach(item => {
-          const quantity = item.quantity || 1;
+          // Default quantity to 1 if not provided
+          const quantity = item.quantity && item.quantity > 0 ? item.quantity : 1;
 
-          for(let i = 0; i < quantity; i++) {
+          for (let i = 0; i < quantity; i++) {
             const pageDiv = document.createElement("div");
-            pageDiv.classList.add("page");
+            pageDiv.className = "page";
 
             // Logo
             const logo = document.createElement("img");
@@ -86,19 +122,19 @@
             logo.className = "logo";
             pageDiv.appendChild(logo);
 
-            // Customer name
+            // Customer Name
             const custText = document.createElement("div");
             custText.className = "text";
             custText.textContent = customer;
             pageDiv.appendChild(custText);
 
-            // Sales Order Number
+            // Order Number
             const orderText = document.createElement("div");
             orderText.className = "text";
             orderText.textContent = order;
             pageDiv.appendChild(orderText);
 
-            // Item name + SKU
+            // Item Name and SKU
             const nameText = document.createElement("div");
             nameText.className = "text";
             nameText.textContent = `${item.name} (${item.sku})`;
@@ -109,10 +145,16 @@
             svg.classList.add("barcode");
             pageDiv.appendChild(svg);
 
+            // Adjust barcode width based on SKU length (simple scaling)
+            let barcodeWidth = 2; // default width per bar
+            if (item.sku.length > 12) {
+              barcodeWidth = Math.max(0.8, 2 - (item.sku.length - 12) * 0.1);
+            }
+
             JsBarcode(svg, item.sku, {
               format: "CODE128",
               displayValue: true,
-              width: 2,  // adjust if needed
+              width: barcodeWidth,
               height: 100,
               fontSize: 16,
               margin: 0
@@ -122,8 +164,10 @@
           }
         });
       } catch (error) {
-        const container = document.getElementById("barcodes");
-        container.innerHTML = `<div style="color:red;">Error loading barcodes: ${error.message}</div>`;
+        document.getElementById('loading').style.display = 'none';
+        const errorDiv = document.getElementById('error');
+        errorDiv.style.display = 'block';
+        errorDiv.textContent = "Error loading barcodes: " + error.message;
       }
     }
 
