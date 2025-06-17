@@ -26,18 +26,18 @@
       font-size: 1.1em;
       cursor: pointer;
     }
-    .barcode-page {
-      width: 3in;
-      height: 4in;
-      border: 1px solid #ddd;
-      padding: 0.5in;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-around;
-      page-break-after: always;
-    }
+   .barcode-page {
+  width: 4in;
+  height: 6in;
+  border: 1px solid #ddd;
+  padding: 0.5in;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+  page-break-after: always;
+}
     .barcode-page:last-child {
   page-break-after: auto;
 }
@@ -128,7 +128,7 @@
 
             // SVG Barcode
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            JsBarcode(svg, item.sku, { format: 'CODE128', displayValue: false, height: 80, width: 2 });
+            JsBarcode(svg, item.sku, { format: 'CODE128', displayValue: false, height: 120, width: 2 });
             page.appendChild(svg);
 
             // SKU big text below barcode
