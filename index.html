@@ -2,141 +2,130 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Barcodes</title>
-  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
   <style>
     @media print {
-      body, html {
-        margin: 0; padding: 0;
+      #printBtn {
+        display: none;
       }
       .barcode-page {
         page-break-after: always;
       }
     }
+
     body {
       font-family: Arial, sans-serif;
       margin: 1em;
     }
+
     #printBtn {
       margin-bottom: 1em;
-      padding: 0.5em 1em;
+      padding: 0.6em 1.2em;
       font-size: 1.1em;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
       cursor: pointer;
     }
+
     .barcode-page {
       width: 3in;
       height: 4in;
-      border: 1px solid #ddd;
-      padding: 0.5in;
-      box-sizing: border-box;
+      border: 1px solid #ccc;
+      margin: 1em auto;
+      padding: 1em;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: space-around;
-      page-break-after: always;
+      justify-content: space-between;
     }
+
     .logo {
-      max-width: 80%;
-      max-height: 50px;
-      margin-bottom: 10px;
+      max-width: 100%;
+      max-height: 1in;
+      margin-bottom: 0.5em;
     }
-    .customer-name, .order-number {
-      font-weight: bold;
+
+    .info {
       text-align: center;
+      margin: 0.5em 0;
     }
+
+    .sku {
+      font-size: 1.5em;
+      font-weight: bold;
+      margin: 0.3em 0;
+    }
+
     svg {
       width: 100%;
-      height: 1.5in;
-    }
-    .sku-text {
-      font-size: 24px;
-      font-weight: bold;
-      margin-top: 5px;
-      text-align: center;
-      letter-spacing: 1.5px;
+      height: auto;
     }
   </style>
 </head>
 <body>
-  <button id="printBtn" onclick="window.print()">Print</button>
+  <button id="printBtn" onclick="window.print()">🖨️ Print</button>
   <div id="barcodes"></div>
 
   <script>
     async function fetchBarcodes() {
-      const params = new URLSearchParams(window.location.search);
-      const id = params.get('id');
-      const customer = params.get('customer') || '';
-      const order = params.get('order') || '';
-
-      if (!id) {
-        alert('Missing sales order ID in URL');
-        return;
-      }
-
       try {
-        const response = await fetch(`/api/salesorder?id=${encodeURIComponent(id)}`);
-        if (!response.ok) throw new Error(`API error: ${response.status}`);
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get("id");
+        const customer = params.get("customer") || "";
+        const order = params.get("order") || "";
 
+        const response = await fetch(`/api/salesorder?id=${id}`);
         const items = await response.json();
 
-        if (!Array.isArray(items) || items.length === 0) {
-          alert('No items found for this sales order');
-          return;
-        }
+        if (!Array.isArray(items)) throw new Error("Invalid items format");
 
-        const container = document.getElementById('barcodes');
-        container.innerHTML = '';
+        const container = document.getElementById("barcodes");
+        container.innerHTML = ""; // clear in case of reload
 
         items.forEach(item => {
-          const qty = item.quantity && Number(item.quantity) > 0 ? Number(item.quantity) : 1;
+          const quantity = item.quantity || 1;
 
-          for (let i = 0; i < qty; i++) {
-            const page = document.createElement('div');
-            page.className = 'barcode-page';
+          for (let i = 0; i < quantity; i++) {
+            const page = document.createElement("div");
+            page.className = "barcode-page";
 
-            // Logo
-            const logo = document.createElement('img');
-            logo.src = 'https://rvacabinetry.com/images/RVA_Cabinetry.webp';
-            logo.alt = 'Logo';
-            logo.className = 'logo';
+            const logo = document.createElement("img");
+            logo.src = "https://rvacabinetry.com/images/RVA_Cabinetry.webp";
+            logo.alt = "Logo";
+            logo.className = "logo";
+
+            const info = document.createElement("div");
+            info.className = "info";
+            info.innerHTML = `
+              <div>${customer}</div>
+              <div>Order: ${order}</div>
+              <div class="sku">${item.sku}</div>
+              <div>${item.name}</div>
+            `;
+
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+
             page.appendChild(logo);
-
-            // Customer
-            const cust = document.createElement('div');
-            cust.textContent = `Customer: ${customer}`;
-            cust.className = 'customer-name';
-            page.appendChild(cust);
-
-            // Order
-            const ord = document.createElement('div');
-            ord.textContent = `Order #: ${order}`;
-            ord.className = 'order-number';
-            page.appendChild(ord);
-
-            // Item name
-            const itemName = document.createElement('div');
-            itemName.textContent = `${item.name}`;
-            itemName.style.textAlign = 'center';
-            itemName.style.marginBottom = '10px';
-            page.appendChild(itemName);
-
-            // SVG Barcode
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            JsBarcode(svg, item.sku, { format: 'CODE128', displayValue: false, height: 80, width: 2 });
+            page.appendChild(info);
             page.appendChild(svg);
-
-            // SKU big text below barcode
-            const skuText = document.createElement('div');
-            skuText.textContent = item.sku;
-            skuText.className = 'sku-text';
-            page.appendChild(skuText);
-
             container.appendChild(page);
+
+            JsBarcode(svg, item.sku, {
+              format: "CODE128",
+              displayValue: false,
+              fontSize: 18,
+              height: 60,
+              margin: 10
+            });
           }
         });
-
-      } catch (error) {
-        alert('Error loading barcodes: ' + error.message);
+      } catch (err) {
+        console.error("Error loading barcodes:", err);
+        alert("Error loading barcodes: " + err.message);
       }
     }
 
