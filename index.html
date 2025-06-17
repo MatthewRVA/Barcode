@@ -17,6 +17,12 @@
       font-family: Arial, sans-serif;
       margin: 1em;
     }
+    #printBtn {
+      margin-bottom: 1em;
+      padding: 0.5em 1em;
+      font-size: 1.1em;
+      cursor: pointer;
+    }
     .barcode-page {
       width: 3in;
       height: 4in;
@@ -42,11 +48,18 @@
       width: 100%;
       height: 1.5in;
     }
+    .sku-text {
+      font-size: 24px;
+      font-weight: bold;
+      margin-top: 5px;
+      text-align: center;
+      letter-spacing: 1.5px;
+    }
   </style>
 </head>
 <body>
+  <button id="printBtn" onclick="window.print()">Print</button>
   <div id="barcodes"></div>
-  <button onclick="window.print()">Print</button>
 
   <script>
     async function fetchBarcodes() {
@@ -75,7 +88,6 @@
         container.innerHTML = '';
 
         items.forEach(item => {
-          // Default quantity = 1 if not provided
           const qty = item.quantity && Number(item.quantity) > 0 ? Number(item.quantity) : 1;
 
           for (let i = 0; i < qty; i++) {
@@ -101,17 +113,23 @@
             ord.className = 'order-number';
             page.appendChild(ord);
 
-            // Item name and SKU
+            // Item name
             const itemName = document.createElement('div');
-            itemName.textContent = `${item.name} (${item.sku})`;
+            itemName.textContent = `${item.name}`;
             itemName.style.textAlign = 'center';
             itemName.style.marginBottom = '10px';
             page.appendChild(itemName);
 
             // SVG Barcode
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            JsBarcode(svg, item.sku, { format: 'CODE128', displayValue: true, fontSize: 16, height: 80, width: 2 });
+            JsBarcode(svg, item.sku, { format: 'CODE128', displayValue: false, height: 80, width: 2 });
             page.appendChild(svg);
+
+            // SKU big text below barcode
+            const skuText = document.createElement('div');
+            skuText.textContent = item.sku;
+            skuText.className = 'sku-text';
+            page.appendChild(skuText);
 
             container.appendChild(page);
           }
