@@ -94,7 +94,7 @@
         container.innerHTML = '';
 
       items.forEach(item => {
-  if (item.print_barcode === false) return; // Skip items with print_barcode === false
+  if (item.cf_print_barcodes === false) return; // Skip items with print_barcode === false
 
   const qty = item.quantity && Number(item.quantity) > 0 ? Number(item.quantity) : 1;
 
