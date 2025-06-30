@@ -94,8 +94,12 @@
         container.innerHTML = '';
 
       items.forEach(item => {
+
+          console.log(`Item: ${item.name}, cf_print_barcodes:`, item.cf_print_barcodes, typeof item.cf_print_barcodes);
+
  if (item.cf_print_barcodes !== true) return;
 
+        
   const qty = item.quantity && Number(item.quantity) > 0 ? Number(item.quantity) : 1;
 
   for (let i = 0; i < qty; i++) {
