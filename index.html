@@ -94,7 +94,6 @@
         container.innerHTML = '';
 
         items.forEach(item => {
-          if (item.print_barcode === false) return;
           const qty = item.quantity && Number(item.quantity) > 0 ? Number(item.quantity) : 1;
 
           for (let i = 0; i < qty; i++) {
@@ -141,9 +140,9 @@
             container.appendChild(page);
             // cf_print_barcodes field
 
-            if (item.cf_print_barcodes) {
+            if (tax_name) {
   const cfPrint = document.createElement('div');
-  cfPrint.textContent = item.cf_print_barcodes;
+  cfPrint.textContent = item.tax_name;
   cfPrint.style.fontSize = '16px';
   cfPrint.style.marginTop = '8px';
   cfPrint.style.textAlign = 'center';
