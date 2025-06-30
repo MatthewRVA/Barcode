@@ -84,6 +84,7 @@
         if (!response.ok) throw new Error(`API error: ${response.status}`);
 
         const items = await response.json();
+console.log("Fetched items:", items);
 
         if (!Array.isArray(items) || items.length === 0) {
           alert('No items found for this sales order');
