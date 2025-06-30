@@ -139,6 +139,17 @@
             page.appendChild(skuText);
 
             container.appendChild(page);
+            // cf_print_barcodes field
+
+            if (item.cf_print_barcodes) {
+  const cfPrint = document.createElement('div');
+  cfPrint.textContent = item.cf_print_barcodes;
+  cfPrint.style.fontSize = '16px';
+  cfPrint.style.marginTop = '8px';
+  cfPrint.style.textAlign = 'center';
+  cfPrint.style.whiteSpace = 'pre-wrap';
+  page.appendChild(cfPrint);
+}
           }
         });
 
