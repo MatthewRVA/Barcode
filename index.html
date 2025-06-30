@@ -94,7 +94,7 @@
         container.innerHTML = '';
 
       items.forEach(item => {
- if (!item.cf_print_barcodes) return;
+ if (item.cf_print_barcodes !== true) return;
 
   const qty = item.quantity && Number(item.quantity) > 0 ? Number(item.quantity) : 1;
 
