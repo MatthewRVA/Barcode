@@ -36,7 +36,8 @@ export default async function handler(req, res) {
       sku: item.sku,
       quantity: item.quantity,
       customer_name: zohoData.salesorder.customer_name,
-      salesorder_number: zohoData.salesorder.salesorder_number
+      salesorder_number: zohoData.salesorder.salesorder_number,
+      Print_Barcodes: item.cf_print_barcodes
     }));
 
     res.status(200).json(items);
