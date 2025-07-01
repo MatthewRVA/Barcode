@@ -1,6 +1,6 @@
-// /api/salesorder.js
-
 import fetch from 'node-fetch';
+
+const CUSTOMFIELD_ID = '5072431000006561001';
 
 export default async function handler(req, res) {
   const { id } = req.query;
@@ -31,19 +31,21 @@ export default async function handler(req, res) {
     }
 
     // 📦 Step 3: Extract and send back the item details
-const items = (zohoData.salesorder?.line_items || []).map(item => {
-  const cfField = item.custom_fields?.find(f => f.api_name === 'cf_print_barcodes');
-  const cfPrintBarcode = cfField && cfField.value === true; // ✔ checkbox is checked
+    const items = (zohoData.salesorder?.line_items || []).map(item => {
+      // Find custom field by customfield_id
+      const cfField = item.custom_fields?.find(f => f.customfield_id === CUSTOMFIELD_ID);
+      // Checkbox value usually comes as a string "true" or "false"
+      const cfPrintBarcode = cfField ? cfField.value === 'true' : false;
 
-  return {
-    name: item.name,
-    sku: item.sku,
-    quantity: item.quantity,
-    customer_name: zohoData.salesorder.customer_name,
-    salesorder_number: zohoData.salesorder.salesorder_number,
-    cf_print_barcodes: cfPrintBarcode // will be true or false
-  };
-});
+      return {
+        name: item.name,
+        sku: item.sku,
+        quantity: item.quantity,
+        customer_name: zohoData.salesorder.customer_name,
+        salesorder_number: zohoData.salesorder.salesorder_number,
+        cf_print_barcodes: cfPrintBarcode // true if checked, else false
+      };
+    });
 
     res.status(200).json(items);
 
