@@ -32,9 +32,8 @@ export default async function handler(req, res) {
 
     // 📦 Step 3: Extract and send back the item details
 const items = (zohoData.salesorder?.line_items || []).map(item => {
-  const cfPrintField = item.custom_fields?.find(f => f.api_name === 'cf_print_barcodes');
-const cfPrintBarcode = cfPrintField?.value === true ? '✔ Print Barcode' : '';
-
+  const cfField = item.custom_fields?.find(f => f.api_name === 'cf_print_barcodes');
+  const cfPrintBarcode = cfField && cfField.value === true; // ✔ checkbox is checked
 
   return {
     name: item.name,
@@ -42,7 +41,7 @@ const cfPrintBarcode = cfPrintField?.value === true ? '✔ Print Barcode' : '';
     quantity: item.quantity,
     customer_name: zohoData.salesorder.customer_name,
     salesorder_number: zohoData.salesorder.salesorder_number,
-    cf_print_barcodes: cfPrintBarcode // ✅ now it's a string, not an empty array
+    cf_print_barcodes: cfPrintBarcode // will be true or false
   };
 });
 
