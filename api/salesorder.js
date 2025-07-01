@@ -31,14 +31,18 @@ export default async function handler(req, res) {
     }
 
     // 📦 Step 3: Extract and send back the item details
-   const items = (zohoData.salesorder?.line_items || []).map(item => ({
-  name: item.name,
-  sku: item.sku,
-  quantity: item.quantity,
-  customer_name: zohoData.salesorder.customer_name,
-  salesorder_number: zohoData.salesorder.salesorder_number,
-  cf_print_barcodes: item.cf_print_barcodes || [] // 🔥 Include custom fields here
-}));
+const items = (zohoData.salesorder?.line_items || []).map(item => {
+  const cfPrintBarcode = item.custom_fields?.find(f => f.api_name === 'cf_print_barcodes')?.value || '';
+
+  return {
+    name: item.name,
+    sku: item.sku,
+    quantity: item.quantity,
+    customer_name: zohoData.salesorder.customer_name,
+    salesorder_number: zohoData.salesorder.salesorder_number,
+    cf_print_barcodes: cfPrintBarcode // ✅ now it's a string, not an empty array
+  };
+});
 
     res.status(200).json(items);
 
