@@ -66,99 +66,100 @@
 <body>
   <button id="printBtn" onclick="window.print()">Print</button>
   <div id="barcodes"></div>
+<script>
+  async function fetchBarcodes() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    const customer = params.get('customer') || '';
+    const order = params.get('order') || '';
 
-  <script>
-    async function fetchBarcodes() {
-      const params = new URLSearchParams(window.location.search);
-      const id = params.get('id');
-      const customer = params.get('customer') || '';
-      const order = params.get('order') || '';
+    if (!id) {
+      alert('Missing sales order ID in URL');
+      return;
+    }
 
-      if (!id) {
-        alert('Missing sales order ID in URL');
+    try {
+      const response = await fetch(`/api/salesorder?id=${encodeURIComponent(id)}`);
+      if (!response.ok) throw new Error(`API error: ${response.status}`);
+
+      const items = await response.json();
+
+      if (!Array.isArray(items) || items.length === 0) {
+        alert('No items found for this sales order');
         return;
       }
 
-      try {
-        const response = await fetch(`/api/salesorder?id=${encodeURIComponent(id)}`);
-        if (!response.ok) throw new Error(`API error: ${response.status}`);
+      const container = document.getElementById('barcodes');
+      container.innerHTML = '';
 
-        const items = await response.json();
+      items.forEach(item => {
+        const qty = item.quantity && Number(item.quantity) > 0 ? Number(item.quantity) : 1;
 
-        if (!Array.isArray(items) || items.length === 0) {
-          alert('No items found for this sales order');
-          return;
+        for (let i = 0; i < qty; i++) {
+          const page = document.createElement('div');
+          page.className = 'barcode-page';
+
+          // Logo
+          const logo = document.createElement('img');
+          logo.src = 'https://rvacabinetry.com/images/RVA_Cabinetry.webp';
+          logo.alt = 'Logo';
+          logo.className = 'logo';
+          page.appendChild(logo);
+
+          // Customer
+          const cust = document.createElement('div');
+          cust.textContent = `Customer: ${customer}`;
+          cust.className = 'customer-name';
+          page.appendChild(cust);
+
+          // Order
+          const ord = document.createElement('div');
+          ord.textContent = `Order #: ${order}`;
+          ord.className = 'order-number';
+          page.appendChild(ord);
+
+          // Item name
+          const itemName = document.createElement('div');
+          itemName.textContent = `${item.name}`;
+          itemName.style.textAlign = 'center';
+          itemName.style.marginBottom = '10px';
+          page.appendChild(itemName);
+
+          // SVG Barcode
+          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          JsBarcode(svg, item.sku, { format: 'CODE128', displayValue: false, height: 120, width: 2 });
+          page.appendChild(svg);
+
+          // SKU big text below barcode
+          const skuText = document.createElement('div');
+          skuText.textContent = item.sku;
+          skuText.className = 'sku-text';
+          page.appendChild(skuText);
+
+          // ✅ Custom field: cf_print_barcodes
+          const customField = item.custom_fields?.find(f => f.api_name === 'cf_print_barcodes');
+          if (customField && customField.value) {
+            const cfPrint = document.createElement('div');
+            cfPrint.textContent = customField.value;
+            cfPrint.style.fontSize = '16px';
+            cfPrint.style.marginTop = '8px';
+            cfPrint.style.textAlign = 'center';
+            cfPrint.style.whiteSpace = 'pre-wrap';
+            page.appendChild(cfPrint);
+          }
+
+          container.appendChild(page);
         }
+      });
 
-        const container = document.getElementById('barcodes');
-        container.innerHTML = '';
-
-        items.forEach(item => {
-          const qty = item.quantity && Number(item.quantity) > 0 ? Number(item.quantity) : 1;
-
-          for (let i = 0; i < qty; i++) {
-            const page = document.createElement('div');
-            page.className = 'barcode-page';
-
-            // Logo
-            const logo = document.createElement('img');
-            logo.src = 'https://rvacabinetry.com/images/RVA_Cabinetry.webp';
-            logo.alt = 'Logo';
-            logo.className = 'logo';
-            page.appendChild(logo);
-
-            // Customer
-            const cust = document.createElement('div');
-            cust.textContent = `Customer: ${customer}`;
-            cust.className = 'customer-name';
-            page.appendChild(cust);
-
-            // Order
-            const ord = document.createElement('div');
-            ord.textContent = `Order #: ${order}`;
-            ord.className = 'order-number';
-            page.appendChild(ord);
-
-            // Item name
-            const itemName = document.createElement('div');
-            itemName.textContent = `${item.name}`;
-            itemName.style.textAlign = 'center';
-            itemName.style.marginBottom = '10px';
-            page.appendChild(itemName);
-
-            // SVG Barcode
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            JsBarcode(svg, item.sku, { format: 'CODE128', displayValue: false, height: 120, width: 2 });
-            page.appendChild(svg);
-
-            // SKU big text below barcode
-            const skuText = document.createElement('div');
-            skuText.textContent = item.sku;
-            skuText.className = 'sku-text';
-            page.appendChild(skuText);
-
-            container.appendChild(page);
-          }
-     const customField = item.custom_fields?.find(f => f.api_name === 'cf_print_barcodes');
-if (customField && customField.value) {
-  const cfPrint = document.createElement('div');
-  cfPrint.textContent = customField.value;
-  cfPrint.style.fontSize = '16px';
-  cfPrint.style.marginTop = '8px';
-  cfPrint.style.textAlign = 'center';
-  cfPrint.style.whiteSpace = 'pre-wrap';
-  page.appendChild(cfPrint);
-}
-
-          }
-        });
-
-      } catch (error) {
-        alert('Error loading barcodes: ' + error.message);
-      }
+    } catch (error) {
+      alert('Error loading barcodes: ' + error.message);
     }
+  }
 
-    window.onload = fetchBarcodes;
-  </script>
+  window.onload = fetchBarcodes;
+</script>
+
+
 </body>
 </html>
