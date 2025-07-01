@@ -9,9 +9,9 @@
       body, html {
         margin: 0; padding: 0;
       }
-        #printBtn {
-    display: none !important;
-  }
+      #printBtn, #filterCheckbox, label[for="filterCheckbox"], #itemCount {
+        display: none !important;
+      }
       .barcode-page {
         page-break-after: always;
       }
@@ -26,21 +26,21 @@
       font-size: 1.1em;
       cursor: pointer;
     }
-   .barcode-page {
-  width: 4in;
-  height: 6in;
-  border: 1px solid #ddd;
-  padding: 0.5in;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-around;
-  page-break-after: always;
-}
+    .barcode-page {
+      width: 4in;
+      height: 6in;
+      border: 1px solid #ddd;
+      padding: 0.5in;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-around;
+      page-break-after: always;
+    }
     .barcode-page:last-child {
-  page-break-after: auto;
-}
+      page-break-after: auto;
+    }
     .logo {
       max-width: 90%;
       max-height: 100px;
@@ -61,105 +61,115 @@
       text-align: center;
       letter-spacing: 1.5px;
     }
+    #itemCount {
+      margin: 1em 0;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
   <button id="printBtn" onclick="window.print()">Print</button>
+  <label style="margin-left: 1em;">
+    <input type="checkbox" id="filterCheckbox" />
+    Only show items marked for printing
+  </label>
+  <div id="itemCount"></div>
   <div id="barcodes"></div>
-<script>
-  async function fetchBarcodes() {
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('id');
-    const customer = params.get('customer') || '';
-    const order = params.get('order') || '';
 
-    if (!id) {
-      alert('Missing sales order ID in URL');
-      return;
-    }
+  <script>
+    let allItems = [];
 
-    try {
-      const response = await fetch(`/api/salesorder?id=${encodeURIComponent(id)}`);
-      if (!response.ok) throw new Error(`API error: ${response.status}`);
+    async function fetchBarcodes() {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+      const customer = params.get('customer') || '';
+      const order = params.get('order') || '';
 
-      const items = await response.json();
-
-      if (!Array.isArray(items) || items.length === 0) {
-        alert('No items found for this sales order');
+      if (!id) {
+        alert('Missing sales order ID in URL');
         return;
       }
 
+      try {
+        const response = await fetch(`/api/salesorder?id=${encodeURIComponent(id)}`);
+        if (!response.ok) throw new Error(`API error: ${response.status}`);
+
+        allItems = await response.json();
+
+        if (!Array.isArray(allItems) || allItems.length === 0) {
+          alert('No items found for this sales order');
+          return;
+        }
+
+        renderBarcodes();
+
+      } catch (error) {
+        alert('Error loading barcodes: ' + error.message);
+      }
+    }
+
+    function renderBarcodes() {
       const container = document.getElementById('barcodes');
+      const counter = document.getElementById('itemCount');
       container.innerHTML = '';
 
-      items.forEach(item => {
+      const filterEnabled = document.getElementById('filterCheckbox').checked;
+      const filteredItems = filterEnabled
+        ? allItems.filter(item => item.cf_print_barcodes === true)
+        : allItems;
+
+      let totalCount = 0;
+
+      filteredItems.forEach(item => {
         const qty = item.quantity && Number(item.quantity) > 0 ? Number(item.quantity) : 1;
+        totalCount += qty;
 
         for (let i = 0; i < qty; i++) {
           const page = document.createElement('div');
           page.className = 'barcode-page';
 
-          // Logo
           const logo = document.createElement('img');
           logo.src = 'https://rvacabinetry.com/images/RVA_Cabinetry.webp';
           logo.alt = 'Logo';
           logo.className = 'logo';
           page.appendChild(logo);
 
-          // Customer
           const cust = document.createElement('div');
-          cust.textContent = `Customer: ${customer}`;
+          cust.textContent = `Customer: ${item.customer_name}`;
           cust.className = 'customer-name';
           page.appendChild(cust);
 
-          // Order
           const ord = document.createElement('div');
-          ord.textContent = `Order #: ${order}`;
+          ord.textContent = `Order #: ${item.salesorder_number}`;
           ord.className = 'order-number';
           page.appendChild(ord);
 
-          // Item name
           const itemName = document.createElement('div');
           itemName.textContent = `${item.name}`;
           itemName.style.textAlign = 'center';
           itemName.style.marginBottom = '10px';
           page.appendChild(itemName);
 
-          // SVG Barcode
           const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
           JsBarcode(svg, item.sku, { format: 'CODE128', displayValue: false, height: 120, width: 2 });
           page.appendChild(svg);
 
-          // SKU big text below barcode
           const skuText = document.createElement('div');
           skuText.textContent = item.sku;
           skuText.className = 'sku-text';
           page.appendChild(skuText);
 
-          // ✅ Custom field: cf_print_barcodes
-          const customField = item.custom_fields?.find(f => f.api_name === 'cf_print_barcodes');
-          if (customField && customField.value) {
-            const cfPrint = document.createElement('div');
-            cfPrint.textContent = customField.value;
-            cfPrint.style.fontSize = '16px';
-            cfPrint.style.marginTop = '8px';
-            cfPrint.style.textAlign = 'center';
-            cfPrint.style.whiteSpace = 'pre-wrap';
-            page.appendChild(cfPrint);
-          }
-
           container.appendChild(page);
         }
       });
 
-    } catch (error) {
-      alert('Error loading barcodes: ' + error.message);
+      // ✅ Update item counter
+      counter.textContent = `Total items to print: ${totalCount}`;
     }
-  }
 
-  window.onload = fetchBarcodes;
-</script>
+    document.getElementById('filterCheckbox').addEventListener('change', renderBarcodes);
 
-
+    window.onload = fetchBarcodes;
+  </script>
 </body>
 </html>
