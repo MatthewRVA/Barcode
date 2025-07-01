@@ -32,7 +32,9 @@ export default async function handler(req, res) {
 
     // 📦 Step 3: Extract and send back the item details
 const items = (zohoData.salesorder?.line_items || []).map(item => {
-  const cfPrintBarcode = item.custom_fields?.find(f => f.api_name === 'cf_print_barcodes')?.value || '';
+  const cfPrintField = item.custom_fields?.find(f => f.api_name === 'cf_print_barcodes');
+const cfPrintBarcode = cfPrintField?.value === true ? '✔ Print Barcode' : '';
+
 
   return {
     name: item.name,
