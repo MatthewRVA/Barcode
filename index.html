@@ -138,17 +138,18 @@
             page.appendChild(skuText);
 
             container.appendChild(page);
-            // cf_print_barcodes field
-
-            if (tax_name) {
+          }
+     const customField = item.custom_fields?.find(f => f.api_name === 'cf_print_barcodes');
+if (customField && customField.value) {
   const cfPrint = document.createElement('div');
-  cfPrint.textContent = item.tax_name;
+  cfPrint.textContent = customField.value;
   cfPrint.style.fontSize = '16px';
   cfPrint.style.marginTop = '8px';
   cfPrint.style.textAlign = 'center';
   cfPrint.style.whiteSpace = 'pre-wrap';
   page.appendChild(cfPrint);
 }
+
           }
         });
 
